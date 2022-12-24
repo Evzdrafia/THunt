@@ -1,0 +1,74 @@
+---
+title: "Исследование метаданных DNS трафика"
+output: html_document
+date: "2022-11-10"
+---
+
+---
+title: "lab2"
+output: html_document
+date: "2022-11-02"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+## Датасет
+```{r}
+data = read.csv("dns.csv")
+print(data)
+```
+### 4.Сколько участников информационного обмена в сети Доброй Организации?
+```{r}
+Is<-(unique(data$is))
+Id<-(unique(data$id))
+print(length(unique(union(Is,Id))))
+
+```
+### 5.Какое соотношение участников обмена внутри сети и участников обращений к внешним ресурсам?
+```{r}
+vec <- c(Is, Id)
+vec<-vec[!duplicated(vec)]
+M <- c("(192.168.)([0-9]{1,3}[.])[0-9]{1,3}","(10.0.)([0-9]{1,3}[.])[0-9]{1,3}","(100.64.)([0-9]{1,3}[.])[0-9]{1,3}","(172.16.)([0-9]{1,3}[.])[0-9]{1,3}")
+lin=length(unique(grep(paste(M,collapse="|"), vec, value=TRUE)))
+lout=length(vec)-lin
+lin/lout
+
+```
+### 6.Найдите топ-10 участников сети, проявляющих наибольшую сетевую активность.
+```{r}
+library(dplyr)
+v<-rev(sort(table(data$query)))
+slice(as.data.frame(v),1:10)
+
+```
+### 7.Найдите топ-10 доменов, к которым обращаются пользователи сети и соответственное количество обращений
+```{r}
+library(dplyr)
+w<-rev(sort(table(data$query)))
+slice(as.data.frame(w),1:10)
+```
+### 7.1.Найдите топ-10 доменов второго уровня, к которым обращаются пользователи сети и соответственное количество обращений
+```{r}
+df<-data
+df%>%
+  mutate(dom=stringr::str_extract(query,"\\.[a-z]*(\\.[a-z]*)$"),countdom=1)%>%
+  group_by(dom) %>%
+  summarise( countdom  = sum(countdom) )%>%
+  arrange(desc(countdom))%>%
+  na.omit()%>%
+  slice(1:10)
+```
+### 8. Опеределите базовые статистические характеристики (функция summary()) интервала времени между последовательным обращениями к топ-10 доменам.
+```{r}
+filter(data, query=="teredo.ipv6.microsoft.com")%>%
+  select(ts)%>%
+  summary()
+filter(data, query=="tools.google.com")%>%
+  select(ts)%>%
+  summary()
+filter(data, query=="www.apple.com")%>%
+  select(ts)%>%
+  summary()
+```
+### Базовые статистические характеристики (функция summary()) интервалов выглядят одинаково((

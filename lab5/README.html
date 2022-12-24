@@ -1,0 +1,63 @@
+<html><head><style>body {
+   color: black;
+}
+</style></head><body><h1 id="-dns-">Исследование метаданных DNS трафика</h1>
+<h2 id="-">Цель работы</h2>
+<ol>
+<li><p>Зекрепить практические навыки использования языка программирования R для обработки данных</p>
+</li>
+<li><p>Закрепить знания основных функций обработки данных экосистемы tidyverse языка R</p>
+</li>
+<li><p>Закрепить навыки исследования метаданных DNS трафика</p>
+</li>
+</ol>
+<h2 id="-">Датасет</h2>
+<pre><code class="lang-{r}">data = read.csv(<span class="hljs-string">"dns.csv"</span>)
+<span class="hljs-function"><span class="hljs-title">print</span><span class="hljs-params">(data)</span></span>
+</code></pre>
+<h3 id="4-">4.Сколько участников информационного обмена в сети Доброй Организации?</h3>
+<pre><code class="lang-{r}">Is&lt;-(<span class="hljs-name">unique</span>(<span class="hljs-name">data</span>$is))
+Id&lt;-(<span class="hljs-name">unique</span>(<span class="hljs-name">data</span>$id))
+print(<span class="hljs-name">length</span>(<span class="hljs-name">unique</span>(<span class="hljs-name">union</span>(<span class="hljs-name">Is</span>,Id))))
+</code></pre>
+<h3 id="5-">5.Какое соотношение участников обмена внутри сети и участников обращений к внешним ресурсам?</h3>
+<pre><code class="lang-{r}">vec &lt;- c<span class="hljs-comment">(Is, Id)</span>
+vec&lt;-vec[!duplicated<span class="hljs-comment">(vec)</span>]
+M &lt;- c<span class="hljs-comment">("(192.168.)</span><span class="hljs-comment">([0-9]{1,3}[.])</span>[<span class="hljs-number">0</span><span class="hljs-number">-9</span>]{<span class="hljs-number">1</span>,<span class="hljs-number">3</span>}<span class="hljs-string">","</span><span class="hljs-comment">(10.0.)</span><span class="hljs-comment">([0-9]{1,3}[.])</span>[<span class="hljs-number">0</span><span class="hljs-number">-9</span>]{<span class="hljs-number">1</span>,<span class="hljs-number">3</span>}<span class="hljs-string">","</span><span class="hljs-comment">(100.64.)</span><span class="hljs-comment">([0-9]{1,3}[.])</span>[<span class="hljs-number">0</span><span class="hljs-number">-9</span>]{<span class="hljs-number">1</span>,<span class="hljs-number">3</span>}<span class="hljs-string">","</span><span class="hljs-comment">(172.16.)</span><span class="hljs-comment">([0-9]{1,3}[.])</span>[<span class="hljs-number">0</span><span class="hljs-number">-9</span>]{<span class="hljs-number">1</span>,<span class="hljs-number">3</span>}<span class="hljs-string">")
+lin=length(unique(grep(paste(M,collapse="</span>|<span class="hljs-string">"), vec, value=TRUE)))
+lout=length(vec)-lin
+lin/lout</span>
+</code></pre>
+<h3 id="6-10-">6.Найдите топ-10 участников сети, проявляющих наибольшую сетевую активность.</h3>
+<pre><code class="lang-{r}">library(<span class="hljs-name">dplyr</span>)
+v&lt;-rev(<span class="hljs-name">sort</span>(<span class="hljs-name">table</span>(<span class="hljs-name">data</span>$query)))
+slice(<span class="hljs-name">as</span>.data.frame(<span class="hljs-name">v</span>),<span class="hljs-number">1</span>:<span class="hljs-number">10</span>)
+</code></pre>
+<h3 id="7-10-">7.Найдите топ-10 доменов, к которым обращаются пользователи сети и соответственное количество обращений</h3>
+<pre><code class="lang-{r}">library(<span class="hljs-name">dplyr</span>)
+w&lt;-rev(<span class="hljs-name">sort</span>(<span class="hljs-name">table</span>(<span class="hljs-name">data</span>$query)))
+slice(<span class="hljs-name">as</span>.data.frame(<span class="hljs-name">w</span>),<span class="hljs-number">1</span>:<span class="hljs-number">10</span>)
+</code></pre>
+<h3 id="7-1-10-">7.1.Найдите топ-10 доменов второго уровня, к которым обращаются пользователи сети и соответственное количество обращений</h3>
+<pre><code class="lang-{r}">df&lt;-data
+df%&gt;%
+  mutate(dom=stringr::str_extract(query,<span class="hljs-string">"\\.[a-z]*(\\.[a-z]*)$"</span>),countdom=1)%&gt;%
+  group_by(dom) %&gt;%
+  summarise( countdom  = sum(countdom) )%&gt;%
+  arrange(desc(countdom))%&gt;%
+  na.omit()%&gt;%
+  slice(1:10)
+</code></pre>
+<h3 id="8-summary-10-">8. Опеределите базовые статистические характеристики (функция summary()) интервала времени между последовательным обращениями к топ-10 доменам.</h3>
+<pre><code class="lang-{r}">filter<span class="hljs-comment">(data, query=="teredo.ipv6.microsoft.com")</span><span class="hljs-meta">%</span>&gt;<span class="hljs-meta">%</span>
+  select<span class="hljs-comment">(ts)</span><span class="hljs-meta">%</span>&gt;<span class="hljs-meta">%</span>
+  summary<span class="hljs-comment">()</span>
+filter<span class="hljs-comment">(data, query=="tools.google.com")</span><span class="hljs-meta">%</span>&gt;<span class="hljs-meta">%</span>
+  select<span class="hljs-comment">(ts)</span><span class="hljs-meta">%</span>&gt;<span class="hljs-meta">%</span>
+  summary<span class="hljs-comment">()</span>
+filter<span class="hljs-comment">(data, query=="www.apple.com")</span><span class="hljs-meta">%</span>&gt;<span class="hljs-meta">%</span>
+  select<span class="hljs-comment">(ts)</span><span class="hljs-meta">%</span>&gt;<span class="hljs-meta">%</span>
+  summary<span class="hljs-comment">()</span>
+</code></pre>
+<h3 id="-summary-">Базовые статистические характеристики (функция summary()) интервалов выглядят одинаково((```</h3>
+</body></html>
